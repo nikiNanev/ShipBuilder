@@ -1,4 +1,5 @@
 #include <iostream>
+#include <string>
 #include <map>
 
 #include <SDL3/SDL.h>
@@ -11,55 +12,101 @@
 
 std::map<SDL_Keycode, bool> keyMap;
 
-float speed = 0.5f;
+struct ship
+{
+    float x_pos;
+    float y_pos;
 
-// Rectangle properties
-float x_pos = 0.0f;
-float y_pos = 0.0f;
+    float width, height;
 
-float width_rect = 50.0f;
-float height_rect = 50.0f;
+    float speed;
+};
 
-void wasd_input(std::map<SDL_Keycode, bool> &keyMap, float &speed, int &width, int &height)
+struct station
+{
+    float x_pos, y_pos;
+    float width, height;
+};
+
+void wasd_input(std::map<SDL_Keycode, bool> &keyMap, struct ship *ship, struct station *station, int &width, int &height)
 {
 
     if (keyMap[SDLK_S])
     {
-        y_pos += speed;
+        ship->y_pos += ship->speed;
 
-        if (y_pos + height_rect >= height)
+        if (ship->y_pos + ship->height >= height)
         {
-            y_pos -= speed;
+            ship->y_pos -= ship->speed;
+        }
+
+        // Collision detection ( is upper line of the station intersects with bottom line of the ship? )
+
+        if (station->y_pos <= ship->y_pos + ship->height)
+        {
+            if (!(ship->x_pos + ship->width <= (station->x_pos) || ship->x_pos >= (station->x_pos + station->width)))
+            {
+                ship->y_pos -= ship->speed;
+            }
         }
     }
 
     if (keyMap[SDLK_W])
     {
-        y_pos -= speed;
+        ship->y_pos -= ship->speed;
 
-        if (y_pos <= 0)
+        if (ship->y_pos <= 0)
         {
-            y_pos += speed;
+            ship->y_pos += ship->speed;
+        }
+
+        // Collision detection ( is bottom line of the station intersects with the upper line of the ship? )
+
+        if (station->y_pos + station->height >= ship->y_pos)
+        {
+
+            if (!(ship->x_pos + ship->width <= (station->x_pos) || ship->x_pos >= (station->x_pos + station->width)))
+            {
+                ship->y_pos += ship->speed;
+
+                std::cout << "ship yPos + height: " << ship->y_pos + ship->height << std::endl;
+
+                std::cout << "station yPos + height: " << station->y_pos + station->height << std::endl;
+            }
         }
     }
 
     if (keyMap[SDLK_A])
     {
-        x_pos -= speed;
+        ship->x_pos -= ship->speed;
 
-        if (x_pos <= 0)
+        if (ship->x_pos <= 0)
         {
-            x_pos += speed;
+            ship->x_pos += ship->speed;
         }
+
+        // Collision detection ( is right side of the station intersects with the left side of the ship? )
+
+        if (station->x_pos <= ship->x_pos)
+        {
+
+            if ((station->x_pos + station->width >= ship->x_pos))
+            {
+                std::cout << "station xPos + width: " << station->x_pos + station->width << std::endl;
+                std::cout << "ship xPos: " << ship->x_pos << std::endl;
+            }
+
+        }
+
     }
 
     if (keyMap[SDLK_D])
     {
-        x_pos += speed;
+        ship->x_pos += ship->speed;
 
-        if (x_pos + width_rect >= width)
+        if (ship->x_pos + ship->width >= width)
         {
-            x_pos -= speed;
+            ship->x_pos -= ship->speed;
         }
     }
 }
@@ -117,6 +164,24 @@ int main(int argc, char *argv[])
     width = dm->w;
     height = dm->h;
 
+    struct ship shipA;
+
+    shipA.x_pos = 0;
+    shipA.y_pos = 0;
+
+    shipA.height = 50.0f;
+    shipA.width = 50.0f;
+
+    shipA.speed = 0.35f;
+
+    struct station stationA;
+
+    stationA.x_pos = 500.0f;
+    stationA.y_pos = 500.0f;
+
+    stationA.width = 100.0f;
+    stationA.height = 100.0f;
+
     bool done = false;
     while (!done)
     {
@@ -139,9 +204,7 @@ int main(int argc, char *argv[])
             }
         }
 
-        wasd_input(keyMap, speed, width, height);
-
-        //Collision detection
+        wasd_input(keyMap, &shipA, &stationA, width, height);
 
         if (keyMap[SDLK_ESCAPE])
         {
@@ -153,17 +216,32 @@ int main(int argc, char *argv[])
         SDL_RenderClear(renderer);
 
         // Draw a red rectangle (use SDL_FRect for SDL3 renderer API)
-        SDL_FRect rectf = {x_pos, y_pos, width_rect, height_rect};
+        SDL_FRect shipA_rect = {shipA.x_pos, shipA.y_pos, shipA.width, shipA.height};
 
-        SDL_FRect rectf2 = {500.0f, 500.0f, 100.0f, 100.0f};
+        SDL_FRect stationA_rect = {stationA.x_pos, stationA.y_pos, stationA.width, stationA.height};
 
         SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-        SDL_RenderFillRect(renderer, &rectf);
+        SDL_RenderFillRect(renderer, &shipA_rect);
 
         SDL_SetRenderDrawColor(renderer, 150, 255, 0, 255);
-        SDL_RenderFillRect(renderer, &rectf2);
+        SDL_RenderFillRect(renderer, &stationA_rect);
 
-        // Present the backbuffer
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+
+        std::string x_position = "x: ";
+        std::string current_x_position = std::to_string(shipA.x_pos);
+        std::string xPosition_full = x_position + current_x_position;
+
+        std::string y_position = "y: ";
+        std::string current_y_position = std::to_string(shipA.y_pos);
+        std::string yPosition_full = y_position + current_y_position;
+
+
+
+        SDL_RenderDebugText(renderer, 10, 10, xPosition_full.c_str());
+        SDL_RenderDebugText(renderer, 10, 30, yPosition_full.c_str());
+
+                // Present the backbuffer
         SDL_RenderPresent(renderer);
     }
 
