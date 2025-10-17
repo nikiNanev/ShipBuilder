@@ -87,17 +87,9 @@ void wasd_input(std::map<SDL_Keycode, bool> &keyMap, struct ship *ship, struct s
 
         // Collision detection ( is right side of the station intersects with the left side of the ship? )
 
-        if (station->x_pos <= ship->x_pos)
+        if (station->x_pos >= ship->x_pos + ship->width)
         {
-
-            if ((station->x_pos + station->width >= ship->x_pos))
-            {
-                std::cout << "station xPos + width: " << station->x_pos + station->width << std::endl;
-                std::cout << "ship xPos: " << ship->x_pos << std::endl;
-            }
-
         }
-
     }
 
     if (keyMap[SDLK_D])
@@ -228,20 +220,30 @@ int main(int argc, char *argv[])
 
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
 
-        std::string x_position = "x: ";
+        std::string x_position = "ship x: ";
         std::string current_x_position = std::to_string(shipA.x_pos);
         std::string xPosition_full = x_position + current_x_position;
 
-        std::string y_position = "y: ";
+        std::string y_position = "ship y: ";
         std::string current_y_position = std::to_string(shipA.y_pos);
         std::string yPosition_full = y_position + current_y_position;
 
+        std::string station_xPos = "station x: ";
+        std::string station_curr_xPos = std::to_string(stationA.x_pos);
+        std::string station_xPos_full = station_xPos + station_curr_xPos;
 
+        std::string station_yPos = "station y: ";
+        std::string station_curr_yPos = std::to_string(stationA.y_pos);
+        std::string station_yPos_full = station_yPos + station_curr_yPos;
 
+        // Debug Info ( coords )
         SDL_RenderDebugText(renderer, 10, 10, xPosition_full.c_str());
         SDL_RenderDebugText(renderer, 10, 30, yPosition_full.c_str());
 
-                // Present the backbuffer
+        SDL_RenderDebugText(renderer, 250, 10, station_xPos_full.c_str());
+        SDL_RenderDebugText(renderer, 250, 30, station_yPos_full.c_str());
+
+        // Present the backbuffer
         SDL_RenderPresent(renderer);
     }
 
