@@ -19,6 +19,8 @@ foreach(ITEM ${SOURCE_DIRS})
     endif()
 endforeach()
 
+include_directories(./include)
+
 add_executable(${PROJECT_NAME} ${SOURCES})
 
 add_subdirectory(vk-bootstrap)

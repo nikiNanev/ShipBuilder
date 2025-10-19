@@ -1,106 +1,43 @@
 #include <iostream>
 #include <string>
+#include <memory>
 #include <map>
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
-
 #include <SDL3_image/SDL_image.h>
+
+#include "Input/Input.h"
 
 #define WINDOW_WIDTH 1366
 #define WINDOW_HEIGHT 768
 
 std::map<SDL_Keycode, bool> keyMap;
 
-struct ship
+void debug_coords(struct ship &shipA, struct station &stationA, SDL_Renderer *renderer)
 {
-    float x_pos;
-    float y_pos;
+    std::string x_position = "ship x: ";
+    std::string current_x_position = std::to_string(shipA.x_pos);
+    std::string xPosition_full = x_position + current_x_position;
 
-    float width, height;
+    std::string y_position = "ship y: ";
+    std::string current_y_position = std::to_string(shipA.y_pos);
+    std::string yPosition_full = y_position + current_y_position;
 
-    float speed;
-};
+    std::string station_xPos = "station x: ";
+    std::string station_curr_xPos = std::to_string(stationA.x_pos);
+    std::string station_xPos_full = station_xPos + station_curr_xPos;
 
-struct station
-{
-    float x_pos, y_pos;
-    float width, height;
-};
+    std::string station_yPos = "station y: ";
+    std::string station_curr_yPos = std::to_string(stationA.y_pos);
+    std::string station_yPos_full = station_yPos + station_curr_yPos;
 
-void wasd_input(std::map<SDL_Keycode, bool> &keyMap, struct ship *ship, struct station *station, int &width, int &height)
-{
+    // Debug Info ( coords )
+    SDL_RenderDebugText(renderer, 10, 10, xPosition_full.c_str());
+    SDL_RenderDebugText(renderer, 10, 30, yPosition_full.c_str());
 
-    if (keyMap[SDLK_S])
-    {
-        ship->y_pos += ship->speed;
-
-        if (ship->y_pos + ship->height >= height)
-        {
-            ship->y_pos -= ship->speed;
-        }
-
-        // Collision detection ( is upper line of the station intersects with bottom line of the ship? )
-
-        if (station->y_pos <= ship->y_pos + ship->height)
-        {
-            if (!(ship->x_pos + ship->width <= (station->x_pos) || ship->x_pos >= (station->x_pos + station->width)))
-            {
-                ship->y_pos -= ship->speed;
-            }
-        }
-    }
-
-    if (keyMap[SDLK_W])
-    {
-        ship->y_pos -= ship->speed;
-
-        if (ship->y_pos <= 0)
-        {
-            ship->y_pos += ship->speed;
-        }
-
-        // Collision detection ( is bottom line of the station intersects with the upper line of the ship? )
-
-        if (station->y_pos + station->height >= ship->y_pos)
-        {
-
-            if (!(ship->x_pos + ship->width <= (station->x_pos) || ship->x_pos >= (station->x_pos + station->width)))
-            {
-                ship->y_pos += ship->speed;
-
-                std::cout << "ship yPos + height: " << ship->y_pos + ship->height << std::endl;
-
-                std::cout << "station yPos + height: " << station->y_pos + station->height << std::endl;
-            }
-        }
-    }
-
-    if (keyMap[SDLK_A])
-    {
-        ship->x_pos -= ship->speed;
-
-        if (ship->x_pos <= 0)
-        {
-            ship->x_pos += ship->speed;
-        }
-
-        // Collision detection ( is right side of the station intersects with the left side of the ship? )
-
-        if (station->x_pos >= ship->x_pos + ship->width)
-        {
-        }
-    }
-
-    if (keyMap[SDLK_D])
-    {
-        ship->x_pos += ship->speed;
-
-        if (ship->x_pos + ship->width >= width)
-        {
-            ship->x_pos -= ship->speed;
-        }
-    }
+    SDL_RenderDebugText(renderer, 250, 10, station_xPos_full.c_str());
+    SDL_RenderDebugText(renderer, 250, 30, station_yPos_full.c_str());
 }
 
 int main(int argc, char *argv[])
@@ -143,6 +80,8 @@ int main(int argc, char *argv[])
 
     const SDL_DisplayMode *dm = SDL_GetCurrentDisplayMode(*displays);
 
+    SDL_free(displays);
+
     if (dm == nullptr)
     {
         SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Could not get the current display mode: %s", SDL_GetError());
@@ -150,8 +89,6 @@ int main(int argc, char *argv[])
         SDL_Quit();
         return 1;
     }
-
-    SDL_free(displays);
 
     width = dm->w;
     height = dm->h;
@@ -175,6 +112,9 @@ int main(int argc, char *argv[])
     stationA.height = 100.0f;
 
     bool done = false;
+
+    auto input = std::make_unique<Input>();
+
     while (!done)
     {
         SDL_Event event;
@@ -196,7 +136,7 @@ int main(int argc, char *argv[])
             }
         }
 
-        wasd_input(keyMap, &shipA, &stationA, width, height);
+        input->wasd_keyboard(keyMap, &shipA, &stationA, width, height);
 
         if (keyMap[SDLK_ESCAPE])
         {
@@ -204,7 +144,7 @@ int main(int argc, char *argv[])
         }
 
         // Clear screen (black)
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        SDL_SetRenderDrawColor(renderer, 0, 10, 0, 255);
         SDL_RenderClear(renderer);
 
         // Draw a red rectangle (use SDL_FRect for SDL3 renderer API)
@@ -220,28 +160,7 @@ int main(int argc, char *argv[])
 
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
 
-        std::string x_position = "ship x: ";
-        std::string current_x_position = std::to_string(shipA.x_pos);
-        std::string xPosition_full = x_position + current_x_position;
-
-        std::string y_position = "ship y: ";
-        std::string current_y_position = std::to_string(shipA.y_pos);
-        std::string yPosition_full = y_position + current_y_position;
-
-        std::string station_xPos = "station x: ";
-        std::string station_curr_xPos = std::to_string(stationA.x_pos);
-        std::string station_xPos_full = station_xPos + station_curr_xPos;
-
-        std::string station_yPos = "station y: ";
-        std::string station_curr_yPos = std::to_string(stationA.y_pos);
-        std::string station_yPos_full = station_yPos + station_curr_yPos;
-
-        // Debug Info ( coords )
-        SDL_RenderDebugText(renderer, 10, 10, xPosition_full.c_str());
-        SDL_RenderDebugText(renderer, 10, 30, yPosition_full.c_str());
-
-        SDL_RenderDebugText(renderer, 250, 10, station_xPos_full.c_str());
-        SDL_RenderDebugText(renderer, 250, 30, station_yPos_full.c_str());
+        debug_coords(shipA, stationA, renderer);
 
         // Present the backbuffer
         SDL_RenderPresent(renderer);
